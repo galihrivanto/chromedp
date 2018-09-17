@@ -85,11 +85,11 @@ func (h *TargetHandler) Run(ctxt context.Context) error {
 	// reset
 	h.Lock()
 	h.frames = make(map[cdp.FrameID]*cdp.Frame)
-	h.qcmd = make(chan *cdproto.Message)
-	h.qres = make(chan *cdproto.Message)
-	h.qevents = make(chan *cdproto.Message)
+	h.qcmd = make(chan *cdproto.Message, 1)
+	h.qres = make(chan *cdproto.Message, 1)
+	h.qevents = make(chan *cdproto.Message, 1)
 	h.res = make(map[int64]chan *cdproto.Message)
-	h.detached = make(chan *inspector.EventDetached)
+	h.detached = make(chan *inspector.EventDetached, 1)
 	h.pageWaitGroup = new(sync.WaitGroup)
 	h.domWaitGroup = new(sync.WaitGroup)
 	h.Unlock()
@@ -346,10 +346,14 @@ func (h *TargetHandler) Execute(ctxt context.Context, methodType string, params 
 	h.resrw.Unlock()
 
 	// queue message
-	h.qcmd <- &cdproto.Message{
+	select {
+	case h.qcmd <- &cdproto.Message{
 		ID:     id,
 		Method: cdproto.MethodType(methodType),
 		Params: paramsBuf,
+	}:
+
+	case <-ctxt.Done():
 	}
 
 	errch := make(chan error, 1)
