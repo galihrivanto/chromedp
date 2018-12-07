@@ -56,3 +56,18 @@ func Sleep(d time.Duration) Action {
 		return nil
 	})
 }
+
+func WaitEventLoad() Action {
+	return ActionFunc(func(ctxt context.Context, h cdp.Executor) error {
+		th, ok := h.(*TargetHandler)
+		if !ok {
+			return ErrInvalidHandler
+		}
+		select {
+		case <-th.WaitEventLoad():
+		case <-ctxt.Done():
+			return ctxt.Err()
+		}
+		return nil
+	})
+}

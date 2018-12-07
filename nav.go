@@ -15,6 +15,7 @@ func Navigate(urlstr string) Action {
 		if !ok {
 			return ErrInvalidHandler
 		}
+		th.ResetEventLoad()
 
 		frameID, _, _, err := page.Navigate(urlstr).Do(ctxt, th)
 		if err != nil {
